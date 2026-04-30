@@ -14,6 +14,21 @@ const STATUS_LABELS = {
   cancelled: 'Отменен'
 };
 
+const PICKUP_SLOTS = [
+  { value: '11:00', label: '11:00-11:15', available: true },
+  { value: '11:15', label: '11:15-11:30', available: true },
+  { value: '11:30', label: '11:30-11:45', available: true },
+  { value: '11:45', label: '11:45-12:00', available: true },
+  { value: '12:00', label: '12:00-12:15', available: true },
+  { value: '12:15', label: '12:15-12:30', available: true },
+  { value: '12:30', label: '12:30-12:45', available: true },
+  { value: '12:45', label: '12:45-13:00', available: true },
+  { value: '13:00', label: '13:00-13:15', available: true },
+  { value: '13:15', label: '13:15-13:30', available: true },
+  { value: '13:30', label: '13:30-13:45', available: true },
+  { value: '13:45', label: '13:45-14:00', available: false }
+];
+
 const seedProducts = [
   {
     id: 1,
@@ -104,6 +119,7 @@ createApp({
     const activeView = ref('menu');
     const activeCategory = ref('Все');
     const pickupTime = ref('12:30');
+    const pickupSlots = ref(PICKUP_SLOTS);
     const orderComment = ref('');
     const staffStatusFilter = ref('all');
     const authMessage = reactive({ text: '', type: '' });
@@ -281,6 +297,7 @@ createApp({
       activeView,
       activeCategory,
       pickupTime,
+      pickupSlots,
       orderComment,
       staffStatusFilter,
       authMessage,

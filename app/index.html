@@ -143,7 +143,11 @@
           <form class="order-form" @submit.prevent="createOrder">
             <label>
               Время получения
-              <input v-model="pickupTime" type="time" required>
+              <select v-model="pickupTime" required>
+                <option v-for="slot in pickupSlots" :key="slot.value" :value="slot.value" :disabled="!slot.available">
+                  {{ slot.label }}{{ slot.available ? '' : ' — недоступно' }}
+                </option>
+              </select>
             </label>
             <label>
               Комментарий
