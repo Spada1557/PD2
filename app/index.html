@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Столовая учебного заведения</title>
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+
+<body>
+  <main id="app" class="app" v-cloak>
+    <section v-if="!currentUser" class="auth-layout">
+      <div class="auth-panel">
+        <div class="brand-lockup auth-brand">
+          <img src="./assets/images/logo.png" alt="Логотип Столовая+">
+          <div>
+            <p class="eyebrow">Проектная деятельность 2</p>
+            <h1>Предварительный заказ блюд</h1>
+            <p class="lead">Информационная система для выбора готовых блюд в студенческой столовой.</p>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Режим авторизации">
+          <button type="button" :class="{ active: authMode === 'login' }" @click="authMode = 'login'">Вход</button>
+          <button type="button" :class="{ active: authMode === 'register' }" @click="authMode = 'register'">Регистрация</button>
+        </div>
+
+        <form class="form" v-if="authMode === 'login'" @submit.prevent="login">
+          <label>
+            Логин
+            <input v-model.trim="loginForm.username" autocomplete="username" type="text">
+          </label>
+          <label>
+            Пароль
+            <input v-model="loginForm.password" autocomplete="current-password" type="password">
+          </label>
+          <p class="form-message" :class="authMessage.type">{{ authMessage.text }}</p>
+          <button class="primary-action" type="submit">Войти</button>
+        </form>
+
+        <form class="form" v-else @submit.prevent="register">
+          <label>
+            Имя
+            <input v-model.trim="registerForm.name" autocomplete="name" type="text">
+          </label>
+          <label>
+            Логин
+            <input v-model.trim="registerForm.username" autocomplete="username" type="text">
+          </label>
+          <label>
+            Пароль
+            <input v-model="registerForm.password" autocomplete="new-password" type="password">
+          </label>
+          <p class="form-message" :class="authMessage.type">{{ authMessage.text }}</p>
+          <button class="primary-action" type="submit">Создать аккаунт</button>
+        </form>
+      </div>
+    </section>
+
+    <template v-else>
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img src="./assets/images/logo.png" alt="Логотип Столовая+">
+          <div>
+            <p class="eyebrow">Столовая+</p>
+            <h1>Заказ готовых блюд</h1>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button type="button" :class="{ active: activeView === 'menu' }" @click="activeView = 'menu'">Меню</button>
+          <button type="button" :class="{ active: activeView === 'orders' }" @click="activeView = 'orders'">Мои заказы</button>
+          <button v-if="isStaff" type="button" :class="{ active: activeView === 'staff' }" @click="activeView = 'staff'">Сотрудник</button>
+        </nav>
+
+        <div class="user-box">
+          <span>{{ currentUser.name }}</span>
+          <button class="ghost-action" type="button" @click="logout">Выйти</button>
+        </div>
+      </header>
+
+      <section class="summary-band">
+        <article>
+          <span>{{ availableProducts.length }}</span>
+          <p>доступных блюд</p>
+        </article>
+        <article>
+          <span>{{ cartCount }}</span>
+          <p>позиций в корзине</p>
+        </article>
+        <article>
+          <span>{{ formatPrice(cartTotal) }}</span>
+          <p>сумма заказа</p>
+        </article>
+        <article>
+          <span>{{ activeOrders.length }}</span>
+          <p>активных заказов</p>
+        </article>
+      </section>
+
+      <section v-if="activeView === 'menu'" class="workspace">
+        <aside class="filters-panel">
+          <h2>Категории</h2>
+          <button type="button" :class="{ active: activeCategory === 'Все' }" @click="activeCategory = 'Все'">Все</button>
+          <button v-for="category in categories" :key="category" type="button" :class="{ active: activeCategory === category }" @click="activeCategory = category">
+            {{ category }}
+          </button>
+        </aside>
+
+        <section class="menu-grid" aria-label="Каталог блюд">
+          <article class="dish-card" v-for="product in filteredProducts" :key="product.id">
+            <img :src="product.image" :alt="product.title">
+            <div class="dish-card__body">
+              <div>
+                <p class="dish-category">{{ product.category }}</p>
+                <h2>{{ product.title }}</h2>
+                <p>{{ product.description }}</p>
+              </div>
+              <div class="dish-card__footer">
+                <strong>{{ formatPrice(product.price) }}</strong>
+                <button class="icon-action" type="button" title="Добавить в корзину" aria-label="Добавить в корзину" @click="addToCart(product)">+</button>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <aside class="cart-panel">
+          <h2>Корзина</h2>
+          <p v-if="cart.length === 0" class="muted">Выберите блюда из меню.</p>
+          <article class="cart-item" v-for="item in cart" :key="item.id">
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ formatPrice(item.price * item.count) }}</p>
+            </div>
+            <div class="stepper">
+              <button type="button" @click="changeCartCount(item.id, -1)">-</button>
+              <span>{{ item.count }}</span>
+              <button type="button" @click="changeCartCount(item.id, 1)">+</button>
+            </div>
+          </article>
+
+          <form class="order-form" @submit.prevent="createOrder">
+            <label>
+              Время получения
+              <input v-model="pickupTime" type="time" required>
+            </label>
+            <label>
+              Комментарий
+              <textarea v-model.trim="orderComment" rows="3" placeholder="Например: без сахара"></textarea>
+            </label>
+            <button class="primary-action" type="submit" :disabled="cart.length === 0">Оформить заказ</button>
+          </form>
+        </aside>
+      </section>
+
+      <section v-if="activeView === 'orders'" class="orders-view">
+        <h2>История заказов</h2>
+        <p v-if="userOrders.length === 0" class="muted">Заказов пока нет.</p>
+        <article class="order-card" v-for="order in userOrders" :key="order.id">
+          <div>
+            <p class="order-number">Заказ №{{ order.number }}</p>
+            <h3>{{ order.items.map(item => item.title).join(', ') }}</h3>
+            <p>Получение: {{ order.pickupTime }} · {{ formatDate(order.createdAt) }}</p>
+          </div>
+          <span class="status" :class="order.status">{{ statusTitle(order.status) }}</span>
+          <strong>{{ formatPrice(order.total) }}</strong>
+        </article>
+      </section>
+
+      <section v-if="activeView === 'staff' && isStaff" class="staff-view">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Панель сотрудника</p>
+            <h2>Комплектование заказов</h2>
+          </div>
+          <select v-model="staffStatusFilter">
+            <option value="all">Все статусы</option>
+            <option v-for="status in statuses" :key="status" :value="status">{{ statusTitle(status) }}</option>
+          </select>
+        </div>
+
+        <article class="staff-order" v-for="order in staffOrders" :key="order.id">
+          <div>
+            <p class="order-number">Заказ №{{ order.number }} · {{ order.customerName }}</p>
+            <h3>{{ order.items.map(item => `${item.title} x${item.count}`).join(', ') }}</h3>
+            <p>Получение: {{ order.pickupTime }} · {{ order.comment || 'без комментария' }}</p>
+          </div>
+          <span class="status" :class="order.status">{{ statusTitle(order.status) }}</span>
+          <button class="secondary-action" type="button" @click="advanceOrder(order)" :disabled="order.status === 'issued' || order.status === 'cancelled'">
+            Следующий статус
+          </button>
+        </article>
+
+        <div class="menu-admin">
+          <h2>Наличие блюд</h2>
+          <article v-for="product in products" :key="product.id">
+            <span>{{ product.title }}</span>
+            <label class="switch">
+              <input type="checkbox" v-model="product.available" @change="saveProducts">
+              <span></span>
+            </label>
+          </article>
+        </div>
+      </section>
+    </template>
+  </main>
+
+  <script src="./vendor/vue.global.prod.js"></script>
+  <script src="./assets/app.js"></script>
+</body>
+
+</html>
