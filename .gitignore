@@ -7,3 +7,9 @@ dist/
 build/
 *.tmp
 ~$*
+.~lock.*#
+
+# Приватная учебная отчетность и локальные генераторы не публикуются в Git.
+docs/
+tools/
+requirements.txt
